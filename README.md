@@ -24,7 +24,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 * Caltech-UCSD Birds-200-2011 dataset: http://www.vision.caltech.edu/visipedia/CUB-200-2011.html  
 
 ## Usage  
-* dataprocess  
+* __Dataprocess__  
 Please follow the instruction to extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
 
 
