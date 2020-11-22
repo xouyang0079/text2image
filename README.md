@@ -1,4 +1,4 @@
-# text2image
+# Text2image
 
 ## Paper
 Skip Thought Vectors:  
@@ -17,5 +17,15 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 * gensim
 * Theano : for skip thought vectors  
 * scikit-learn : for skip thought vectors  
-* NLTK : for skip thought vectors
+* NLTK : for skip thought vectors  
+
+## Dataset  
+* Oxford-102 flower dataset: http://www.robots.ox.ac.uk/~vgg/data/flowers/102/  
+* Caltech-UCSD Birds-200-2011 dataset: http://www.vision.caltech.edu/visipedia/CUB-200-2011.html  
+
+## Usage  
+* dataprocess  
+Please follow the instruction to extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
+
+
         
