@@ -25,7 +25,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 * Caltech-UCSD Birds-200-2011 dataset: http://www.vision.caltech.edu/visipedia/CUB-200-2011.html  
 
 ## Usage  
-* __Dataprocess__  
+* __Data process__  
 1. Extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
 2. Generate h5 file for training and testing: `python h5flowerlast.py`
 
@@ -35,7 +35,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 * __Generating images from captions__  
 `python test_1_1.py`  
 
-* __Inference for MSE and SSIM__
+* __Inference for MSE and SSIM__  
 `python inference1.py`  
 
 * __Extract vgg features__  
