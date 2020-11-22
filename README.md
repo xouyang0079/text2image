@@ -1,4 +1,4 @@
-# Text2image
+# Generating Image Sequence from Description with LSTM Conditional GAN
 
 ## Paper
 Skip Thought Vectors:  
