@@ -11,6 +11,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 ## Requirements  
 * Python 2.7.6  
 * Tensorflow 1.5.0   
+* Lasagne
 * h5py  
 * fuel  
 * compiler  
@@ -25,7 +26,26 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 
 ## Usage  
 * __Dataprocess__  
-Please follow the instruction to extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
+1. Extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
+2. Generate h5 file for training and testing: python h5flowerlast.py
+
+* __Training__  
+python lstmgan_11.py  
+
+* __Generating images from captions__  
+python test_1_1.py  
+
+* __Inference for MSE and SSIM__
+python inference1.py  
+
+* __Extract vgg features__  
+python vgg_feature.py  
+
+* __Inference for Euclidean distance and Correlation  
+python inference2.py
+
+
+
 
 
         
