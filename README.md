@@ -9,7 +9,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
         paper: https://arxiv.org/pdf/1806.03027.pdf  
     
 ## Requirements  
-        * Python 2.7.6  
+* Python 2.7.6  
         * Tensorflow 1.5.0   
         * h5py  
         * fuel  
