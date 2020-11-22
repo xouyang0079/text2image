@@ -27,22 +27,22 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 ## Usage  
 * __Dataprocess__  
 1. Extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
-2. Generate h5 file for training and testing: python h5flowerlast.py
+2. Generate h5 file for training and testing: `python h5flowerlast.py`
 
 * __Training__  
-python lstmgan_11.py  
+`python lstmgan_11.py`  
 
 * __Generating images from captions__  
-python test_1_1.py  
+`python test_1_1.py`  
 
 * __Inference for MSE and SSIM__
-python inference1.py  
+`python inference1.py`  
 
 * __Extract vgg features__  
-python vgg_feature.py  
+`python vgg_feature.py`  
 
-* __Inference for Euclidean distance and Correlation  
-python inference2.py
+* __Inference for Euclidean distance and Correlation__  
+`python inference2.py`
 
 
 
