@@ -1,4 +1,4 @@
-# Text2image
+# Generating Image Sequence from Description with LSTM Conditional GAN
 
 ## Paper
 Skip Thought Vectors:  
@@ -26,8 +26,10 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 
 ## Usage  
 * __Data process__  
-1. Extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
-2. Generate h5 file for training and testing: `python h5flowerlast.py`
+1. Put the text file in folder: /your_path/text-to-image/Data/oxflower/cvpr2016_flowers/text_c10  
+2. Put the image file in folder: /your_path/text-to-image/Data/oxflower/image64 (you need to resize the image to 64x64)  
+3. Extract skip-thought vectors: https://github.com/paarthneekhara/text-to-image  
+4. Generate h5 file for training and testing: `python h5flowerlast.py`
 
 * __Training__  
 `python lstmgan_11.py`  
