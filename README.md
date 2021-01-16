@@ -32,10 +32,7 @@ Generating Image Sequence from Description with LSTM Conditional GAN:
 4. Generate h5 file for training and testing: `python h5flowerlast.py`
 
 * __Training__  
-`python lstmgan_11.py`  
-
-* __Generating images from captions__  
-`python test_1_1.py`  
+`python lstmgan1_1.py`   
 
 * __Inference for MSE and SSIM__  
 `python inference1.py`  
