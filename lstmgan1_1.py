@@ -1,11 +1,11 @@
-# conditional gan with cnn features flower data
+# lstm conditional gan with mask with no penalty
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import tensorflow as tf
 import numpy as np
-import model0_v1
+import model1_1
 import argparse
 import pickle
 from os.path import join
@@ -80,11 +80,11 @@ def main():
         'caption_vector_length': args.caption_vector_length
     }
 
-    gan = model0_v1.GAN(model_options)
+    gan = model1_1.GAN(model_options)
     input_tensors, variables, loss, outputs, checks = gan.build_model()
 
     d_optim = tf.train.AdamOptimizer(args.learning_rate, beta1=args.beta1).minimize(loss['d_loss'],
-                                                                                    var_list=variables['d_vars'])
+                                                                                    var_list=variables['d_vars'] + variables['g1_vars'])
     g_optim = tf.train.AdamOptimizer(args.learning_rate, beta1=args.beta1).minimize(loss['g_loss'],
                                                                                     var_list=variables['g_vars'] + variables['l_vars'])
 
@@ -102,10 +102,10 @@ def main():
     g_costs = []
     d_costs = []
     gl_costs = []
-    ntrain = 6149
-    nval = 1020
+    ntrain = 5760
+    nval = 189
 
-    dataPath = './flower_15.h5'
+    dataPath = 'flower_15.h5'
     train_set = H5PYDataset(dataPath, which_sets=('train',))
     train_set1 = H5PYDataset(dataPath, which_sets=('train',))
     val_set = H5PYDataset(dataPath, which_sets=('val',))
@@ -130,7 +130,7 @@ def main():
 
 
     for epoch in range(args.epochs):
-        n_batches = int(ntrain / args.batch_size)
+        n_batches = ntrain / args.batch_size
         start_time = time.time()
         for batch in range(n_batches):
             try:
@@ -147,7 +147,6 @@ def main():
                 it_train1 = tr_stream1.get_epoch_iterator()
                 annotationtr1, image_featuretr1, skip_vectortr1, word_vectortr1 = it_train1.next()
                 image_featuretr1 = image_featuretr1 / np.float32(255)
-
 
             if annotationtr.shape[0] != args.batch_size:
                 it_train = tr_stream.get_epoch_iterator()
@@ -167,7 +166,7 @@ def main():
                     image_featuretr_new[m][mm] = image_featuretr[m]
             image_featuretr_new = np.asarray(image_featuretr_new, dtype='float32')
             imb0 = image_featuretr
-            imb = image_featuretr  # batchsize*3*64*64
+            imb = image_featuretr  # batchsize*length*3*64*64
 
             image_featuretr1 = np.reshape(image_featuretr1, [image_featuretr1.shape[0], -1])
             image_featuretr1 = np.reshape(image_featuretr1, (image_featuretr1.shape[0], 64, 64, 3))
@@ -184,21 +183,34 @@ def main():
             for j in range(args.batch_size):
                 y_len[j] = np.count_nonzero(y_sum[j]) - 1
 
+            mask = np.empty((args.batch_size,15,400), dtype='float32')
+            for i in range(args.batch_size):
+                for j in range(15):
+                    if j<(y_len[i]+1):
+                        mask[i][j] = 1.0
+                    else:
+                        mask[i][j] = 0.0
 
-            # con = skip_vectortr[:, 0:2400]  # batchsize*2400
-            # con = np.reshape(con, (args.batch_size, nt))  # batchsize*2400
-            #zmb = word_vectortr  # batchsize*length*400
-            con = word_vectortr
-            z_noise = np.random.uniform(-1, 1, [args.batch_size, 100])
+            con = skip_vectortr[:, 0:2400]  # batchsize*2400
+            con = np.reshape(con, (args.batch_size, nt))  # batchsize*2400
+            zmb = word_vectortr  # batchsize*length*400
+
+            # reconst_img = gen(zmb, y_len)
+            # print reconst_img[0].shape
+            # print reconst_img[1].shape
+            # print reconst_img[2].shape
+            # print reconst_img[3].shape
+
 
             # DISCR UPDATE
             check_ts = [checks['d_loss1'], checks['d_loss2'], checks['d_loss3']]
-            _, d_loss, gen, d1, d2, d3 = sess.run([d_optim, loss['d_loss'], outputs['generator']] + check_ts,
+            _, d_loss, gen, mask_out, d1, d2, d3 = sess.run([d_optim, loss['d_loss'], outputs['generator'], outputs['mask_out']] + check_ts,
                                                   feed_dict={
                                                       input_tensors['t_real_image']: imb,
                                                       input_tensors['t_wrong_image']: imb1,
                                                       input_tensors['t_real_caption']: con,
-                                                      #input_tensors['t_z']: z_noise,
+                                                      input_tensors['t_z']: zmb,
+                                                      input_tensors['mask']: mask
                                                   })
 
             print "d1", d1
@@ -207,21 +219,23 @@ def main():
             print "D", d_loss
 
             # GEN UPDATE
-            _, g_loss, gen = sess.run([g_optim, loss['g_loss'], outputs['generator']],
+            _, g_loss, gen, mask_out = sess.run([g_optim, loss['g_loss'], outputs['generator'], outputs['mask_out']],
                                       feed_dict={
                                           input_tensors['t_real_image']: imb,
                                           input_tensors['t_wrong_image']: imb1,
                                           input_tensors['t_real_caption']: con,
-                                          #input_tensors['t_z']: z_noise,
+                                          input_tensors['t_z']: zmb,
+                                          input_tensors['mask']: mask
                                       })
 
             # GEN UPDATE TWICE, to make sure d_loss does not go to 0
-            _, g_loss, gen = sess.run([g_optim, loss['g_loss'], outputs['generator']],
+            _, g_loss, gen, mask_out = sess.run([g_optim, loss['g_loss'], outputs['generator'], outputs['mask_out']],
                                       feed_dict={
                                           input_tensors['t_real_image']: imb,
                                           input_tensors['t_wrong_image']: imb1,
                                           input_tensors['t_real_caption']: con,
-                                          #input_tensors['t_z']: z_noise,
+                                          input_tensors['t_z']: zmb,
+                                          input_tensors['mask']: mask
                                       })
 
             print 'batch:%.0f g_cost_img: %.4f d_cost_img:%.4f' % (batch, float(g_loss), float(d_loss))
@@ -242,7 +256,7 @@ def main():
 
         annotationtr1 = annotationtr[0:16]
         for u in range(16):
-            file = open("./pdf_11/train/txt/%s.txt" % str(n_epochs), "a")
+            file = open("./pdf1_1_1/train/txt/%s.txt" % str(n_epochs), "a")
             xxxx = annotationtr1[u][0]
             file.write(str(u + 1) + ' ' + xxxx + '\n')
             file.close()
@@ -260,18 +274,44 @@ def main():
         #         axes[i, j].set_xticks([])
         #         axes[i, j].set_yticks([])
         #         axes[i, j].axis('off')
-        # figs.savefig('./pdf_11/train/gen/' + str(n_epochs) + '.png')
+        # figs.savefig('./pdf1_1_1/train/gen/' + str(n_epochs) + '.png')
         # plt.close()
 
-        figs, axes = plt.subplots(4, 4, figsize=(16, 16))
-        for i in range(4):
-            for j in range(4):
-                axes[i, j].imshow(reconst_img[i * 4 + j])
-                axes[i, j].set_xticks([])
-                axes[i, j].set_yticks([])
-                axes[i, j].axis('off')
-        figs.savefig('./pdf_11/train/gen/' + str(n_epochs) + '.png')
-        plt.close()
+        for m in range(16):
+            figs, axes = plt.subplots(4, 4, figsize=(16, 16))
+            for i in range(4):
+                for j in range(4):
+                    if (i*4+j) < 15:
+                        axes[i, j].imshow(reconst_img[m][i * 4 + j])
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+                    else:
+                        axes[i, j].imshow(np.zeros((64,64,3)))
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+            figs.savefig('./pdf1_1_1/train/gen/' + str(n_epochs) + '_' + str(m) + '.png')
+            plt.close()
+
+        reconst_img1 = mask_out  # length*batchsize*(64*64*3)
+
+        for m in range(16):
+            figs, axes = plt.subplots(4, 4, figsize=(16, 16))
+            for i in range(4):
+                for j in range(4):
+                    if (i*4+j) < 15:
+                        axes[i, j].imshow(reconst_img1[m][i * 4 + j])
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+                    else:
+                        axes[i, j].imshow(np.zeros((64,64,3)))
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+            figs.savefig('./pdf1_1_1/train/mask/' + str(n_epochs) + '_' + str(m) + '.png')
+            plt.close()
 
 
         reconst_img2 = imb0
@@ -283,8 +323,30 @@ def main():
                 axes[i, j].set_xticks([])
                 axes[i, j].set_yticks([])
                 axes[i, j].axis('off')
-        figs.savefig('./pdf_11/train/real/' + str(n_epochs) + '.png')
+        figs.savefig('./pdf1_1_1/train/real/' + str(n_epochs) + '.png')
         plt.close()
+
+        mask_fin = np.concatenate((mask_out,mask_out,mask_out), axis=4)
+        #reconst_img3 = imb0 * mask_fin
+
+        for m in range(16):
+            figs, axes = plt.subplots(4, 4, figsize=(16, 16))
+            for i in range(4):
+                for j in range(4):
+                    if (i*4+j) < 15:
+                        axes[i, j].imshow(imb0[m] * mask_out[m][i * 4 + j])
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+                    else:
+                        axes[i, j].imshow(np.zeros((64,64,3)))
+                        axes[i, j].set_xticks([])
+                        axes[i, j].set_yticks([])
+                        axes[i, j].axis('off')
+            figs.savefig('./pdf1_1_1/train/multiple/' + str(n_epochs) + '_' + str(m) + '.png')
+            plt.close()
+
+
 
         # # Validation model
         # cost_val = _val(imbva, imbva1, conva)
@@ -295,7 +357,7 @@ def main():
         # annotationva1 = annotationva[0:16]
         #
         # for u in range(16):
-        #     file = open("./pdf_11/val/txt/%s.txt" % str(n_epochs), "a")
+        #     file = open("./pdf1_1_1/val/txt/%s.txt" % str(n_epochs), "a")
         #     xxxx = annotationva1[u][0]
         #     file.write(str(u + 1) + ' ' + xxxx + '\n')
         #     file.close()
@@ -312,7 +374,7 @@ def main():
         #         axes[i, j].set_xticks([])
         #         axes[i, j].set_yticks([])
         #         axes[i, j].axis('off')
-        # figs.savefig('./pdf_11/val/gen/' + str(n_epochs) + '.png')
+        # figs.savefig('./pdf1_1_1/val/gen/' + str(n_epochs) + '.png')
         # plt.close()
         #
         # reconst_img1 = imbva0
@@ -324,16 +386,16 @@ def main():
         #         axes[i, j].set_xticks([])
         #         axes[i, j].set_yticks([])
         #         axes[i, j].axis('off')
-        # figs.savefig('./pdf_11/val/real/' + str(n_epochs) + '.png')
+        # figs.savefig('./pdf1_1_1/val/real/' + str(n_epochs) + '.png')
         # plt.close()
 
         if epoch % 50 == 0:
-            saver.save(sess, "./pdf_11/model/model_after_{}_epoch_{}.ckpt".format(args.data_set, epoch))
+            saver.save(sess, "./pdf1_1_1/model/model_after_{}_epoch_{}.ckpt".format(args.data_set, epoch))
 
 
 
 def load_training_data(data_dir, data_set):
-	h = h5py.File(join(data_dir, 'flower_15.h5'))
+	h = h5py.File(join(data_dir, 'flower_tv.hdf5'))
 	flower_captions = {}
 	for ds in h.iteritems():
 		flower_captions[ds[0]] = np.array(ds[1])
